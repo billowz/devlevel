@@ -1,0 +1,61 @@
+{
+	"name": "devlevel",
+	"version": "0.0.1",
+	"description": "",
+	"main": "dist/devlevel.js",
+	"jsnext:main": "src/index.js",
+	"scripts": {
+		"test": "jest",
+		"wtest": "jest --watch",
+		"build": "rollup -c"
+	},
+	"jest": {
+		"transform": {
+			"^.+\\.js$": "babel-jest"
+		},
+		"testEnvironment": "node",
+		"collectCoverage": true,
+		"collectCoverageFrom": [
+			"src/**/*.js"
+		],
+		"coverageDirectory": "./cover"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/tao-zeng/devlevel.git"
+	},
+	"keywords": [
+		"dev",
+		"log",
+		"assert"
+	],
+	"author": "tao.zeng.zt@gmail.com",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/tao-zeng/devlevel/issues"
+	},
+	"homepage": "https://github.com/tao-zeng/devlevel#readme",
+	"devDependencies": {
+		"babel-cli": "^6.26.0",
+		"babel-core": "^6.26.0",
+		"babel-jest": "^22.0.4",
+		"babel-plugin-external-helpers": "^6.22.0",
+		"babel-plugin-syntax-dynamic-import": "^6.18.0",
+		"babel-plugin-transform-es3-member-expression-literals": "^6.22.0",
+		"babel-plugin-transform-es3-property-literals": "^6.22.0",
+		"babel-preset-env": "^1.6.1",
+		"babel-preset-es2015": "^6.24.1",
+		"babel-preset-stage-2": "^6.24.1",
+		"install": "^0.10.2",
+		"jest": "^22.0.4",
+		"jest-environment-jsdom": "^22.0.4",
+		"regenerator-runtime": "^0.11.1",
+		"rollup": "^0.53.0",
+		"rollup-plugin-babel": "^3.0.3",
+		"rollup-plugin-filesize": "^1.5.0",
+		"rollup-plugin-gzip": "^1.3.0",
+		"rollup-plugin-node-resolve": "^3.0.0",
+		"rollup-plugin-uglify": "^2.0.1",
+		"webidl-conversions": "^4.0.2"
+	}
+}

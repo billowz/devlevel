@@ -1,0 +1,6 @@
+{
+	"indent_size": 1,
+	"indent_char": "\t",
+	"brace_style": "none,preserve-inline",
+	"unformatted": ["#", "`"]
+}
