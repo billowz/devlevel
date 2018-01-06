@@ -2,15 +2,14 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define('devlevel', ['exports'], factory) :
 	(factory((global.devlevel = {})));
-}(this, (function (exports) {
+}(this, (function (exports) { 'use strict';
 
 var toStr = Object.prototype.toString;
-var conditions = {
-	finite: function finite(o) {
-		return o === o && o !== Infinity && toStr.call(o) === '[object Number]';
-	}
-};
-
+var conditions = {};
+var UNDEF = 'undefined';
+var NUL = 'null';
+var INF = 'Infinity';
+var ARR = 'Array';
 var byteArray = ['Uint8Array', 'Int8Array'];
 var shortArray = ['Uint16Array', 'Int16Array'];
 var intArray = ['Uint32Array', 'Int32Array'];
@@ -18,110 +17,105 @@ var floatArray = ['Float32Array', 'Float64Array'];
 var arrayBuffer = 'ArrayBuffer';
 var typedArrays = byteArray.concat(shortArray).concat(intArray).concat(floatArray).concat(arrayBuffer);
 
-con(isStr, 'bool', 'Boolean');
-con(isStr, 'num', 'Number');
-con(isStr, 'str', 'String');
-con(isType, 'fn', 'function');
-con(isStr, 'date', 'Date');
-con(isStr, 'array', 'Array');
-for (var i = 0; i < typedArrays.length; i++) {
-	con(isStr, typedArrays[i].replace(/^[a-zA-Z]/, function (o) {
-		return o.toLowerCase();
-	}), typedArrays[i]);
-}con(isStr, 'byteArray', byteArray);
-con(isStr, 'shortArray', shortArray);
-con(isStr, 'intArray', intArray);
-con(isStr, 'floatArray', floatArray);
-con(isStr, 'arrayBuffer', arrayBuffer);
-con(isStr, 'typedArray', typedArrays);
-con(isStr, 'array', 'Array');
-con(isStr, 'array', 'Array');
-con(isStr, 'reg', 'RegExp');
-con(isStr, 'obj', 'Object');
-con(isStr, 'err', 'Error');
-con(isStr, 'arrayLike', ['Array', 'Arguments', 'NodeList'].concat(typedArrays));
-con(isValue, 'nil', ['undefined', 'null']);
-con(isValue, 'nul', 'null');
-con(isValue, 'undef', 'undefined', 0, 0);
-con(isValue, 'def', 'undefined', 1, 0);
-con(isValue, 'NaN', 'o', 1);
-con(isValue, 'infinite', 'Infinity');
-con(function (v, isNot) {
-	return isExpr(['a', 'b'], 'return ' + (isNot ? '!' : '') + '(a===b||(a!==a&&b!==b));');
-}, 'eq');
+addTypeCon({
+	bool: 'Boolean',
+	num: 'Number',
+	str: 'String',
+	fn: 'Function',
+	date: 'Date',
+	reg: 'RegExp',
+	obj: 'Object',
+	err: 'Error',
+	array: ARR,
+	arrayLike: [[ARR, 'Arguments', 'NodeList'].concat(typedArrays)],
+	byteArray: [byteArray],
+	shortArray: [shortArray],
+	intArray: [intArray],
+	floatArray: [floatArray],
+	typedArrays: [typedArrays]
+});
+each(typedArrays, function (t) {
+	return addTypeCon(reFirst(t), t);
+});
+addValueCon({
+	nil: [[UNDEF, NUL]],
+	nul: NUL,
+	def: [UNDEF, 1, 1],
+	undef: [UNDEF, 0, 1],
+	NaN: ['o', 1],
+	infinite: [INF, 0, 1]
+});
+addCon({
+	finite: [['o'], function (o) {
+		return o === o && o !== Infinity && toStr.call(o) === '[object Number]';
+	}],
+	eq: [['a', 'b'], function (a, b) {
+		return a === b || a !== a && b !== b;
+	}],
+	notEq: [['a', 'b'], function (a, b) {
+		return a !== b && (a === a || b === b);
+	}]
+});
 
-function con(is, name, value) {
-	var isNot = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-	var addNot = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
-
-	var fn = conditions[name] = is(value, isNot);
-	fn.__name__ = name;
-	if (addNot) {
-		name = 'not' + name.replace(/^[a-zA-Z]/, function (o) {
-			return o.toUpperCase();
-		});
-		fn = conditions[name] = is(value, !isNot);
-		fn.__name__ = name;
-	}
-}
-
-function isType(t, isNot) {
-	return isIn('o', 'typeof o', t, isNot, function (t) {
-		return '\'' + t + '\'';
+function addTypeCon(name, values, notEq, notMakeNot) {
+	_addCon(arguments, addTypeCon, function () {
+		return addEqCon(name, [toStr], ['o'], '$0.call(o)', map(arrayVal(values), function (v) {
+			return '\'[object ' + v + ']\'';
+		}), notEq, notMakeNot);
 	});
 }
 
-function isStr(s, isNot) {
-	return isIn('o', 'Object.prototype.toString.call(o)', s, isNot, function (s) {
-		return '\'[object ' + s + ']\'';
+function addValueCon(name, values, notEq, notMakeNot) {
+	_addCon(arguments, addValueCon, function () {
+		return addEqCon(name, undefined, ['o'], 'o', values, notEq, notMakeNot);
 	});
 }
 
-function isValue(v, isNot) {
-	return isIn('o', 'o', v, isNot);
+function _addCon(args, thisCb, cb) {
+	args.length === 1 ? each(args[0], function (v, n) {
+		return thisCb.apply(null, [n].concat(v));
+	}) : cb();
 }
 
-function isIn(params, condition, cases, isNot, valueHandle) {
-	if (!(cases instanceof Array)) cases = [cases];
-	var len = cases.length;
-	if (valueHandle) {
-		var i = len,
-		    arr = new Array(len);
-		while (i--) {
-			arr[i] = valueHandle(cases[i]);
-		}cases = arr;
-	}
-	return isExpr(params, len > 1 ? 'switch(' + condition + '){\ncase ' + cases.join(':\n\t\tcase ') + ':\nreturn ' + !isNot + ';\ndefault:\nreturn ' + !!isNot + ';\n}' : 'return (' + condition + ')' + (isNot ? '!' : '=') + '==' + cases[0] + ';');
+function addEqCon(name) {
+	var injects = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+	var args = arguments[2];
+	var conCode = arguments[3];
+	var values = arguments[4];
+	var notEq = arguments[5];
+	var notMakeNot = arguments[6];
+
+	values = arrayVal(values);
+	var params = map(injects, function (v, i) {
+		return '$' + i;
+	});
+
+	params.push('return function(' + args.join(',') + '){\n' + (values.length > 1 ? 'switch(' + conCode + '){\ncase ' + values.join(':\n\t\tcase ') + ': return ' + !notEq + ';\ndefault: return ' + !!notEq + ';\n}' : 'return (' + conCode + ')' + (notEq ? '!' : '=') + '==' + values[0] + ';') + '\n    }');
+
+	addCon(name, args, Function.apply(Function, params).apply(null, injects));
+	if (!notMakeNot) addEqCon('not' + reFirst(name, 1), injects, args, conCode, values, !notEq, 1);
 }
 
-function isExpr(params, expr) {
-	if (!(params instanceof Array)) params = [params];
-	var fn = Function.apply(Function, params.concat(expr.apply ? expr(params) : expr));
-	fn.params = params;
-	return fn;
+function addCon(name, args, fn) {
+	if (arguments.length === 1) each(name, function (v, n) {
+		conditions[n] = v;
+	});else conditions[name] = [args, fn];
 }
 
 function _if(condition, callback, isNot) {
-	var params = condition.params || ['o'];
-	return new Function('condition', 'callback', 'slice', 'return function(' + params.join(',') + '){\nif(' + (isNot ? '!' : '') + 'condition(' + params.join(',') + '))\n    callback(slice(arguments, ' + params.length + '));\n}')(condition, callback, sliceArgs);
+	var args = condition[0];
+	return new Function('condition', 'callback', 'slice', 'return function(' + args.join(',') + '){\nif(' + (isNot ? '!' : '') + 'condition(' + args.join(',') + '))\n    callback(slice(arguments, ' + args.length + '));\n}')(condition[1], callback, sliceArgs);
 }
 
 function assignCons(obj, callback, isNot) {
 	for (var name in conditions) {
 		obj[name] = _if(conditions[name], callback, isNot);
-	}
+	}return obj;
 }
 
 function callBy(condition, cb) {
-	switch (arguments.length) {
-		case 0:
-			return;
-		case 1:
-			condition();
-			return;
-		default:
-			condition && cb();
-	}
+	var len = arguments.length;
+	if (len > 1) condition && cb();else if (len) condition();
 }
 function exception(error) {
 	if (typeof error === 'function') error = error();
@@ -145,38 +139,43 @@ var debug = createLog('debug', 0);
 var info = createLog('info', 1);
 var warn = createLog('warn', 2);
 var error = createLog('error', 3);
-
-if (!console) console = {
-	log: function log() {}
-};
-
 function createLog(name, level) {
-	if (!console[name]) console[name] = console.log;
-
-	function print(args) {
-		args.length && console[name].apply(console, [mark].concat(args));
-	}
-
 	function log() {
-		print(arguments);
+		level >= currentLevel && log.print.apply(this, arguments);
 	}
 	log.level = level;
-	log.methods = getLogMethods(name, print);
-	logs[name] = log;
-	logMap[level] = log;
+	log.methods = getLogMethods(name, log);
+	logs[level] = log;
+	logMap[name] = log;
 	return bindLog(log);
 }
 
-function getLogMethods(name, print) {
+function getLogMethods(name, log) {
+	var mark = '[' + name + ']: ';
 	return assignCons({
 		by: callBy,
 		when: function when(condition) {
-			condition && this.print(sliceArgs(arguments, 1));
+			condition && log.print.apply(log, sliceArgs(arguments, 1));
 		},
-
-		print: print
-	}, print);
+		print: function print(msg) {
+			if (arguments.length) {
+				var args = map(arguments, function (v) {
+					return v;
+				});
+				if (typeof msg === 'string') {
+					args[0] = mark + args[0];
+				} else {
+					args.unshift(mark);
+				}
+				log.__print(args, name);
+			}
+		}
+	}, function (args) {
+		return log.print.apply(log, args);
+	});
 }
+
+function empty() {}
 
 function bindLog(log) {
 	var level = log.level,
@@ -184,22 +183,39 @@ function bindLog(log) {
 
 	for (var method in methods) {
 		log[method] = level < currentLevel ? empty : methods[method];
-	}
-	return log;
+	}return log;
 }
 
 function setLogLevel(level) {
 	var log = logMap[level];
-	if (log) {
-		var _level = log.level;
-		var min = Math.min(_level, currentLevel);
-		var max = Math.min(_level, currentLevel);
-		for (var _i = min; _i <= max; _i++) {
-			bindLog(logs[_i]);
-		}
-		currentLevel = _level;
+	assert(log, 'invalid log level: ' + level);
+	level = log.level;
+	if (level !== currentLevel) {
+		currentLevel = level;
+		each(logs, bindLog);
 	}
 }
+
+function setLogConsole(console, applyArgs) {
+	each(logs, function (log) {
+		log.__print = applyArgs ? function (args, name) {
+			console[name].apply(console, args);
+		} : function (args, name) {
+			return console[name](args, name);
+		};
+	});
+}
+function isLog(level) {
+	var log = logMap[level];
+	assert(log, 'invalid log level: ' + level);
+	return log.level >= currentLevel;
+}
+
+if (!console) console = {
+	log: function log() {}
+};
+if (!console.info) console.info = console.log;
+setLogConsole(console, 1);
 
 function sliceArgs(args, offset) {
 	var len = args.length;
@@ -209,13 +225,56 @@ function sliceArgs(args, offset) {
 	}return arr;
 }
 
+function each(obj, cb) {
+	if (obj instanceof Array) {
+		var i = obj.length;
+		while (i--) {
+			cb(obj[i], i);
+		}
+	} else {
+		for (var key in obj) {
+			cb(obj[key], key);
+		}
+	}
+}
+
+function map(arr, cb) {
+	var i = arr.length,
+	    ret = new Array(i);
+	while (i--) {
+		ret[i] = cb(arr[i], i);
+	}return ret;
+}
+
+function reFirst(str, upper) {
+	return str.replace(/^[a-zA-Z]/, upper ? function (o) {
+		return o.toUpperCase();
+	} : function (o) {
+		return o.toLowerCase();
+	});
+}
+
+function arrayVal(val) {
+	return val instanceof Array ? val : [val];
+}
+
 exports.exception = exception;
 exports.assert = assert;
 exports.debug = debug;
 exports.info = info;
 exports.warn = warn;
 exports.error = error;
+exports.log = logMap;
 exports.setLogLevel = setLogLevel;
+exports.setLogConsole = setLogConsole;
+exports.isLog = isLog;
+exports.sliceArgs = sliceArgs;
+exports.each = each;
+exports.map = map;
+exports.reFirst = reFirst;
+exports.arrayVal = arrayVal;
+
+Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 //# sourceMappingURL=devlevel.js.map
