@@ -5,18 +5,19 @@
 	"main": "dist/devlevel.js",
 	"jsnext:main": "src/index.js",
 	"scripts": {
-		"test": "jest",
+		"test": "jest -b",
 		"wtest": "jest --watch",
 		"build": "rollup -c",
 		"codecov": "cat cover/*/lcov.info | codecov",
 		"cli": "jest && rollup -c && npm run codecov"
 	},
 	"jest": {
+		"bail": true,
 		"transform": {
-			"^.+\\.js$": "babel-jest"
+			"\\.js$": "babel-jest"
 		},
 		"testEnvironment": "node",
-		"collectCoverage": true,
+		"collectCoverage": false,
 		"collectCoverageFrom": [
 			"src/**/*.js"
 		],
@@ -39,7 +40,7 @@
 	"homepage": "https://github.com/tao-zeng/devlevel#readme",
 	"devDependencies": {
 		"babel-core": "^6.26.0",
-		"babel-jest": "^22.0.4",
+		"babel-jest": "^22.0.6",
 		"babel-plugin-external-helpers": "^6.22.0",
 		"babel-plugin-transform-es3-member-expression-literals": "^6.22.0",
 		"babel-plugin-transform-es3-property-literals": "^6.22.0",
@@ -47,15 +48,12 @@
 		"babel-preset-stage-2": "^6.24.1",
 		"codecov": "^3.0.0",
 		"install": "^0.10.2",
-		"jest": "^22.0.4",
-		"jest-environment-jsdom": "^22.0.4",
-		"regenerator-runtime": "^0.11.1",
-		"rollup": "^0.53.3",
+		"jest": "^22.0.6",
+		"rollup": "^0.54.0",
 		"rollup-plugin-babel": "^3.0.3",
 		"rollup-plugin-filesize": "^1.5.0",
 		"rollup-plugin-gzip": "^1.3.0",
-		"rollup-plugin-node-resolve": "^3.0.0",
-		"rollup-plugin-uglify": "^2.0.1",
-		"webidl-conversions": "^4.0.2"
+		"rollup-plugin-node-resolve": "^3.0.2",
+		"rollup-plugin-uglify": "^2.0.1"
 	}
 }

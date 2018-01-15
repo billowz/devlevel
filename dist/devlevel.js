@@ -2,7 +2,7 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define('devlevel', ['exports'], factory) :
 	(factory((global.devlevel = {})));
-}(this, (function (exports) { 'use strict';
+}(this, (function (exports) {
 
 var toStr = Object.prototype.toString;
 var conditions = {};
@@ -273,8 +273,6 @@ exports.each = each;
 exports.map = map;
 exports.reFirst = reFirst;
 exports.arrayVal = arrayVal;
-
-Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 //# sourceMappingURL=devlevel.js.map

@@ -8,13 +8,14 @@
 	],
 	"plugins": [
 		"transform-es3-member-expression-literals",
-		"transform-es3-property-literals",
-		"external-helpers"
+		"transform-es3-property-literals"
 	],
 	"env": {
 		"test": {
-			"presets": ["env", "stage-2"]
+			"presets": ["env"]
+		},
+		"development": {
+			"plugins": ["external-helpers"]
 		}
 	}
-
 }
