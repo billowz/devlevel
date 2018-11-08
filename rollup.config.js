@@ -1,64 +1,60 @@
 import resolve from 'rollup-plugin-node-resolve'
 import babel from 'rollup-plugin-babel'
-import uglify from 'rollup-plugin-uglify'
-import gzip from 'rollup-plugin-gzip'
+import {uglify} from 'rollup-plugin-uglify'
 import filesize from 'rollup-plugin-filesize'
+import visualizer from 'rollup-plugin-visualizer'
 import pkg from './package.json';
 
-const {
-	name,
-	homepage,
-	author,
-	license,
-	version,
-	description
-} = pkg
-const namespace = name
-const module = name
-const dest = pkg.main
-const main = pkg['jsnext:main']
-
-export default [
-	cfg({
-		input: main,
-		output: dest,
-		namespace,
-		module
-	}),
-	cfg({
-		input: main,
-		output: dest.replace(/\.js$/, '.min.js'),
-		namespace,
-		module,
-		plugins: [uglify(), gzip()]
-	})
-];
-
-
-function cfg({
-	input,
-	output,
-	namespace,
-	module,
-	plugins = []
-}) {
-	return {
-		input,
-		name: namespace, // global name
-		output: {
-			file: output,
-			sourcemap: true,
-			format: 'umd',
-			amd: {
-				id: module || name // amd name
-			}
-		},
-		strict: false,
-		legacy: true, // run in ie8
+function config(options) {
+	return Object.assign({
+		input: './src/index.js'
+	}, options, {
 		plugins: [
-			filesize(), resolve(), babel({
-				exclude: 'node_modules/**'
-			})
-		].concat(plugins)
-	}
+			filesize(),
+			resolve({ jsnext: true }),
+			babel({})
+		].concat(options.plugins || [])
+	})
 }
+
+function umd(options) {
+	return Object.assign({
+		sourcemap: true,
+		name: pkg.namespace || pkg.name,
+		strict: true,
+		legacy: true,
+		format: 'umd',
+		amd: {
+			id: pkg.name
+		}
+	}, options)
+}
+
+export default [ // production
+	// modules
+	config({
+		external: Object.keys(pkg.dependencies||{}),
+		output: [
+			{ file: pkg.main, format: 'cjs', sourcemap: true },
+			{ file: pkg.module, format: 'esm', sourcemap: true }
+		]
+	}),
+	config({
+		output: umd({
+			file: `dist/${pkg.name}.js`
+		})
+	}),
+	config({
+		output: umd({
+			file: `dist/${pkg.name}.min.js`
+		}),
+		plugins: [uglify({
+			warnings: true,
+			sourcemap: true,
+			ie8: true
+		}), visualizer({
+			filename: 'code-analysis.html',
+			sourcemap: true
+		})]
+	})
+]
